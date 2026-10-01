@@ -18,7 +18,7 @@ export default function Inquiry({ boxes, draft }: { boxes: BoxSummary[]; draft: 
   const [situation, setSituation] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; retryable: boolean } | null>(null);
   const [disagreeing, setDisagreeing] = useState(false);
   const [note, setNote] = useState("");
 
@@ -34,11 +34,15 @@ export default function Inquiry({ boxes, draft }: { boxes: BoxSummary[]; draft: 
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ band, situation, turns }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 400 means this history can never succeed; only server and network trouble is worth retrying.
+        setError({ message: data.error ?? "Something went wrong.", retryable: res.status >= 429 });
+        return;
+      }
       setEntries((prev) => [...prev, { result: data as InquiryResult }]);
-    } catch (e) {
-      setError((e as Error).message);
+    } catch {
+      setError({ message: "Couldn't reach the server. Check your connection.", retryable: true });
     } finally {
       setLoading(false);
     }
@@ -121,7 +125,7 @@ export default function Inquiry({ boxes, draft }: { boxes: BoxSummary[]; draft: 
           </button>
           {error && (
             <p className="error-inline" role="alert">
-              {error}
+              {error.message}
             </p>
           )}
         </form>
@@ -277,10 +281,12 @@ export default function Inquiry({ boxes, draft }: { boxes: BoxSummary[]; draft: 
 
           {error && (
             <div className="card error" role="alert">
-              <p>{error}</p>
-              <button className="secondary" onClick={() => ask(turnsOf(entries))}>
-                Try again
-              </button>
+              <p>{error.message}</p>
+              {error.retryable && (
+                <button className="secondary" onClick={() => ask(turnsOf(entries))}>
+                  Try again
+                </button>
+              )}
             </div>
           )}
 

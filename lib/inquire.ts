@@ -67,19 +67,32 @@ function renderTurns(turns: Turn[], byId: Map<string, Box>): string {
 
 const client = new Anthropic();
 
+export class InvalidHistory extends Error {}
+
 export async function inquire(req: InquiryRequest, boxes: Box[]): Promise<InquiryResult> {
   const byId = new Map(boxes.map((b) => [b.id, b]));
+
+  // Replay the conversation from the top: every agree/disagree must name a child of the box
+  // agreed to just before it, so the path is always a real walk down the tree.
+  let parentId = "root";
+  const path: string[] = [];
+  let rejected: string[] = [];
   for (const t of req.turns) {
-    if (t.type !== "more" && !byId.has(t.boxId)) throw new Error(`Unknown box ${t.boxId}`);
+    if (t.type === "more") continue;
+    if (!childrenOf(boxes, parentId).some((c) => c.id === t.boxId)) {
+      throw new InvalidHistory(`${t.boxId} is not inside ${parentId}`);
+    }
+    if (t.type === "agree") {
+      path.push(t.boxId);
+      parentId = t.boxId;
+      rejected = [];
+    } else if (!rejected.includes(t.boxId)) {
+      rejected.push(t.boxId);
+    }
   }
 
-  const path = req.turns.flatMap((t) => (t.type === "agree" ? [t.boxId] : []));
-  const parentId = path.at(-1) ?? "root";
   const children = childrenOf(boxes, parentId);
   if (children.length === 0) return { kind: "done", path };
-
-  const childIds = new Set(children.map((c) => c.id));
-  const rejected = req.turns.flatMap((t) => (t.type === "disagree" && childIds.has(t.boxId) ? [t.boxId] : []));
   const candidates = children.filter((c) => !rejected.includes(c.id));
   if (rejected.length >= RULES.maxDisagreementsPerLevel || candidates.length === 0) {
     return { kind: "choose", parentId, options: children.map((c) => c.id) };
