@@ -11,6 +11,9 @@ explains it in plain language, and asks whether the teacher mostly agrees or dis
 **The current box text is placeholder** written by Luna to prove the machine works. Kim
 replaces it. The banner on the page disappears once no file is marked `DRAFT`.
 
+**Live:** https://startingpoint.openfeedbackfactory.org (Vercel project `obeyllc/teacher-inquiry`,
+DNS CNAME on Hostinger). Password-gated by `SITE_PASSWORD` (any username).
+
 ## Run it
 
 ```bash
