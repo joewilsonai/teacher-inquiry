@@ -15,3 +15,5 @@ venv/
 CLAUDE.local.md
 .claude/settings.local.json
 tsconfig.tsbuildinfo
+.vercel
+.env*
