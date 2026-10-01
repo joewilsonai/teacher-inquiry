@@ -1,0 +1,418 @@
+:root {
+  --paper: #f6f1e8;
+  --card: #fffdf9;
+  --ink: #1f2b2a;
+  --muted: #5b6866;
+  --line: #e4dccd;
+  --accent: #1d6a64;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2efec;
+  --no: #9a4a2f;
+  --no-soft: #f6e6df;
+  --draft-bg: #fff3d1;
+  --draft-ink: #7a5600;
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+
+.draft {
+  margin: 0 0 28px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--draft-bg);
+  color: var(--draft-ink);
+  font-size: 15px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1,
+h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(32px, 6vw, 44px);
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.intro {
+  margin-bottom: 28px;
+}
+
+.lede {
+  margin: 12px 0 0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(31, 43, 42, 0.04), 0 8px 24px rgba(31, 43, 42, 0.05);
+}
+
+.ask {
+  display: grid;
+  gap: 22px;
+}
+
+.bands {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.bands legend {
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.band {
+  display: grid;
+  gap: 2px;
+  padding: 14px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.band:hover {
+  border-color: var(--accent);
+}
+
+.band.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.band-label {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.band-hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-weight: 700;
+}
+
+textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  resize: vertical;
+}
+
+textarea:focus,
+button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+button {
+  font: inherit;
+}
+
+.primary,
+.secondary {
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--accent);
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ask .primary {
+  justify-self: start;
+}
+
+.thread {
+  display: grid;
+  gap: 14px;
+}
+
+.said blockquote {
+  margin: 0;
+  font-size: 19px;
+}
+
+.chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.past {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.past.yes {
+  background: var(--accent-soft);
+}
+
+.past.no {
+  background: var(--no-soft);
+}
+
+.past.more {
+  background: #efe9de;
+}
+
+.past .mark {
+  font-weight: 700;
+}
+
+.past.yes .mark {
+  color: var(--accent);
+}
+
+.past.no .mark {
+  color: var(--no);
+}
+
+.suggestion {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.explain {
+  margin: 12px 0 0;
+}
+
+.question {
+  margin: 18px 0 12px;
+  font-weight: 700;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.followup {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.followup .primary {
+  justify-self: start;
+}
+
+.why {
+  margin-top: 20px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.why summary {
+  cursor: pointer;
+}
+
+.why p {
+  margin: 8px 0 0;
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.option {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.option:hover {
+  border-color: var(--accent);
+}
+
+.option span {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.trail {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  font-size: 19px;
+}
+
+.trail li + li {
+  margin-top: 4px;
+}
+
+.thinking {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.error {
+  border-color: var(--no);
+  background: var(--no-soft);
+}
+
+.error p,
+.error-inline {
+  margin: 0 0 10px;
+  color: var(--no);
+}
+
+.restart {
+  justify-self: start;
+  margin-top: 8px;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 18px;
+  }
+  .band-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}
