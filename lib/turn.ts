@@ -1,8 +1,8 @@
 import type { Band } from "./bands";
 import { type Collector, type CollectorRecord, NoCollector } from "./collector";
-import type { CogId, Data } from "./data";
+import { type CogId, type Data, enough } from "./data";
 import { type Limit, MAX_CHARS, MAX_TURNS } from "./limits";
-import { ModelBusy, type ModelClient, ModelUnavailable, type ReadOutput, type ThreadEvent } from "./model";
+import { conditionCog, ModelBusy, type ModelClient, ModelUnavailable, type ReadOutput, type ThreadEvent } from "./model";
 import { compose, type Paraphrase } from "./paraphrase";
 import { type Offered, sign, type Step, verify } from "./passed";
 
@@ -27,7 +27,7 @@ export type TurnResponse =
 // What the evaluation looks at and the browser never receives.
 export type TurnResult = TurnResponse & {
   // Why she was asked what was happening: she named a topic; a reading would need a motive
-  // assumed; a situation landed on none of the four; or she said no and nothing else fits.
+  // assumed; a situation was sorted to no cog; or she said no and nothing else fits.
   reason?: "topic_only" | "intent_needed" | "nocog" | "after_no";
   read?: ReadOutput;
   paraphrase?: Paraphrase;
@@ -96,6 +96,10 @@ export async function runTurn(
 ): Promise<TurnResult> {
   const { band, account, turns } = req;
   const cogById = new Map(data.cogs.map((c) => [c.id, c]));
+  // An account is sorted only to the cogs with no "others needed:" line. The one cog that
+  // has that line is never sorted to: it is worked out below, after the sort.
+  const placeById = new Map(data.cogs.filter((c) => !c.condition).map((c) => [c.id, c]));
+  const condition = conditionCog(data);
 
   // The system's own limits.
   if (turns.length > MAX_TURNS) throw new TurnLimit("turns");
@@ -169,23 +173,47 @@ export async function runTurn(
     // over any cog the model may have listed anyway.
     if (read.situation !== "present") return ask(read.situation, read);
 
-    const found = [...new Set(read.cogs)].flatMap((id) => cogById.get(id) ?? []);
+    // The sort. Anything that is not a cog an account can be sorted to is dropped here.
+    const fired = [...new Set(read.cogs)].flatMap((id) => placeById.get(id) ?? []);
     // She said no to this cog and wrote nothing. It is not offered again on this turn;
     // anything else that fits still is.
-    const cogs = bareNo ? found.filter((c) => c.id !== bareNo) : found;
+    const offered = bareNo ? fired.filter((c) => c.id !== bareNo) : fired;
+
+    // After the sort, a check on its result. The reading step answered two more things: do her
+    // own words name teaching of her own at that moment, and which of the cogs it listed were on
+    // her at the same moment as that teaching? With no teaching named, nothing is marked.
+    const teaching = read.teaching === true;
+    const marked = teaching ? offered.filter((c) => (read.withTeaching ?? []).includes(c.id)) : [];
+    // A no to this reading stands until she writes something new. Once she has, the read
+    // decides from those words. This line changes a result only when a run of wordless nos
+    // would otherwise leave enough standing.
+    const sinceHerLastWords = turns.slice(turns.findLastIndex((t) => t.type === "more" || !blank(t.note)) + 1);
+    const off = sinceHerLastWords.some((t) => t.type === "disagree" && t.cog === condition.id);
+    // What is enough is one authored line: "others needed:" in that cog's file.
+    const leads = !off && enough(condition.condition.othersNeeded, { sorted: offered.length, marked: marked.length });
+    // She said no to a cog and wrote words. The read still lists only that cog and marks it as
+    // alongside her teaching, and under the line in force that is not enough. That cog alone
+    // would be the reading she just said no to, so it is not offered again on this turn and she
+    // is asked instead. (With "one" this cannot happen: a marked cog means it leads.)
+    const refused = last?.type === "disagree" && !bareNo ? last.cog : null;
+    const sameAgain = !leads && offered.length === 1 && offered[0].id === refused && marked.length === 1;
+    // When it applies it leads, and every cog that was sorted to is named after it.
+    const cogs = leads ? [condition, ...offered] : sameAgain ? [] : offered;
 
     if (cogs.length === 0) {
       // After a "no", the account did find a cog and her no is already kept with these same
       // words. That is the one record for this turn.
       if (last?.type === "disagree") return ask("after_no", read);
-      // A situation that came through the door and lands on none of the four: ask, and keep it.
+      // A situation that came through the door and was sorted to no cog: ask, and keep it.
       await keep("no cog");
       return ask("nocog", read);
     }
 
-    // The model's clause was written for the cog it put first. If that one was just removed,
-    // the cog that now leads uses its own authored clause.
-    const paraphrase = compose(cogs, cogs[0] === found[0] ? read.meaning : "", data.copy);
+    // The reading step writes one clause for the cog it put first and one for her teaching
+    // and something else together. She is shown the one that matches what leads. If the cog
+    // that leads is neither (the first was just removed), its own authored clause is used.
+    const clause = leads ? (read.withTeachingMeaning ?? "") : read.cogs[0] === cogs[0].id ? read.meaning : "";
+    const paraphrase = compose(cogs, clause, data.copy);
     if (paraphrase.fallback) console.warn(`meaning_fallback ${cogs[0].id}`);
     return {
       kind: "reading",

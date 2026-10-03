@@ -5,9 +5,10 @@ import path from "node:path";
 import { drafts as draftItems, isDraft, loadData } from "../lib/data";
 import { downCopy } from "../lib/down";
 import { LIMITS } from "../lib/limits";
-import { readSystem, thresholdSystem } from "../lib/model";
+import { conditionCog, readSystem, sortIds, thresholdSystem } from "../lib/model";
+import { isFinal } from "../lib/sections";
 import { SLOTS } from "../lib/slots";
-import { COG_NUMBER, hasWord, NOT_HER_ERROR, NOT_IN_A_READING } from "./harness";
+import { COG_NUMBER, HEDGES, hasWord, NOT_HER_ERROR, NOT_IN_A_READING, NOT_SAID_OF_5K } from "./harness";
 
 const root = process.cwd();
 const data = loadData(); // throws, naming the file, on a missing slot, a bad status or a missing section
@@ -56,6 +57,81 @@ for (const cog of data.cogs.filter((c) => !(c.id in MISSOURI))) {
 // A cog with a Missouri indicator is cited through the frame, never by a sentence of its own.
 for (const cog of data.cogs.filter((c) => c.id in MISSOURI)) {
   if (cog.citeSentence) fail(`data/cogs/${cog.id}.md: has a Missouri "cite:", so it takes no "## Cite sentence" section`);
+  // Accounts are sorted to Missouri's cogs. None of them is worked out after the sort.
+  if (cog.condition) fail(`data/cogs/${cog.id}.md: has a Missouri "cite:", so it takes no "others needed:" line`);
+}
+
+// 1b. The cog with no Missouri indicator is never a choice in the sort. It carries the
+//     "others needed:" line, the reading step is never told its name, and its sentence says
+//     plainly that it is proposed and that Missouri has no Quality Indicator for it.
+const notes: string[] = [];
+const condition = conditionCog(data);
+const conditionFile = `data/cogs/${condition.id}.md`;
+for (const cog of data.cogs.filter((c) => !(c.id in MISSOURI))) {
+  if (!cog.condition) fail(`data/cogs/${cog.id}.md: has no Missouri "cite:", so it needs an "others needed:" line`);
+}
+if (sortIds(data).join() !== Object.keys(MISSOURI).join()) {
+  fail(`data/cogs: accounts must be sorted to exactly Missouri's cogs (${Object.keys(MISSOURI).join(", ")}); the sort now holds ${sortIds(data).join(", ")}`);
+}
+{
+  const sentence = condition.citeSentence ?? "";
+  // While the file is a DRAFT these stop the build. Once Kim has written the sentence
+  // herself (status: final) her wording stands, and the same three are only pointed out.
+  const report = isFinal(condition.status) ? (m: string) => notes.push(m) : fail;
+  if (!/propos/i.test(sentence)) report(`${conditionFile}: the "## Cite sentence" section must say this is proposed (the word "proposed" is not in it)`);
+  if (!/Quality Indicator/i.test(sentence)) report(`${conditionFile}: the "## Cite sentence" section must say Missouri has no Quality Indicator for this (the words "Quality Indicator" are not in it)`);
+  for (const word of HEDGES) {
+    if (hasWord(sentence, word)) report(`${conditionFile}: the "## Cite sentence" section says "${word}"; it says this is proposed without doubting it`);
+  }
+  for (const word of NOT_SAID_OF_5K) {
+    if (hasWord(sentence, word)) fail(`${conditionFile}: the "## Cite sentence" section says "${word}"; this cog is never called that, and never presented as Missouri's`);
+  }
+  const citeLeadIn = data.copy["paraphrase.cite"].split("{")[0].trim();
+  if (citeLeadIn && sentence.includes(citeLeadIn)) fail(`${conditionFile}: the "## Cite sentence" section begins a citation ("${citeLeadIn}"); there is nothing of Missouri's to cite for this cog`);
+}
+{
+  // The sorting step is never told this cog's name: not by another cog file, not by the
+  // rules, and not by the sections of its own file that the step is shown.
+  let named = false;
+  for (const f of files("data/cogs", () => true)) {
+    if (f !== path.join("data", "cogs", `${condition.id}.md`) && text(f).includes(condition.name)) {
+      named = true;
+      fail(`${f}: names "${condition.name}"; an account is never sorted to that cog, so no other cog file points to it`);
+    }
+  }
+  for (const rule of ["reading", "meaning"] as const) {
+    if (data.rules[rule].includes(condition.name)) {
+      named = true;
+      fail(`data/rules.md "${rule}": names "${condition.name}"; the sorting step is never told that cog's name`);
+    }
+  }
+  const prompt = readSystem(data);
+  if (prompt.includes(`<cog id="${condition.id}"`)) fail(`lib/model.ts: the sorting step is shown ${condition.id} as a cog to sort to; it is worked out after the sort`);
+  if (!named && prompt.includes(condition.name)) {
+    fail(`${conditionFile}: the sorting step is never told this cog's name; take "${condition.name}" out of the Definition, Examples and Near-misses sections and the two sections of rules`);
+  }
+}
+
+// 1c. No test account is also an example in a cog file, or the evaluation would be marking
+//     the system on sentences it was handed. Whole sentences are compared, never parts.
+{
+  const norm = (s: string) => s.replace(/[’‘]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  const accounts = new Map<string, number>();
+  text(path.join("data", "tests.md")).split("\n").forEach((line, i) => {
+    const m = line.match(/^\s*- \[[^\]]+\] (.+)$/);
+    if (!m) return;
+    const said = m[1].replace(/\s+#[^#]*$/, "").replace(/^(\[[^\]]+\]\s*)+/, "");
+    if (said && said !== "(no note)") accounts.set(norm(said), i + 1);
+  });
+  for (const c of data.cogs) {
+    // Each bullet under Examples and Near-misses, and the quoted sentence a near-miss opens with.
+    const bullets = `${c.examples}\n${c.nearMisses}`.split("\n").flatMap((l) => (l.startsWith("- ") ? [l.slice(2).trim()] : []));
+    const sentences = [...bullets, ...bullets.flatMap((b) => b.match(/^"([^"]+)"/)?.[1] ?? [])];
+    for (const sentence of sentences) {
+      const line = accounts.get(norm(sentence));
+      if (line) fail(`data/cogs/${c.id}.md: "${sentence}" is also a test account (data/tests.md line ${line}); a test account never appears in a cog file`);
+    }
+  }
 }
 
 // 2. Nothing she can be shown blames her, turns her away, gives advice, or assigns a motive.
@@ -182,10 +258,12 @@ if (fs.existsSync(termsFile)) {
 const drafts = draftItems(data);
 
 for (const p of problems) console.log(`  ✗ ${p}`);
+for (const n of notes) console.log(`  note: ${n}`);
 console.log(
   `data checks: ${problems.length} problems. ${data.cogs.length} cogs, ${data.beyond.length} places beyond, ${SLOTS.length} slots, ${Object.keys(data.rules).length} rule sections. ` +
     `Banner ${isDraft(data) ? "showing" : "off"} (${drafts.length} DRAFT items). ` +
-    `Private-term scan ${privateChecked ? "ran" : "skipped (no .private-terms file)"}.`,
+    `Private-term scan ${privateChecked ? "ran" : "skipped (no .private-terms file)"}. ` +
+    `Others needed for ${condition.name}: "${condition.condition.othersNeeded}".`,
 );
 if (process.argv.includes("--drafts")) for (const d of drafts) console.log(`  DRAFT ${d}`);
 if (problems.length) process.exit(1);

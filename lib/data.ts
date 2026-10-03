@@ -7,6 +7,23 @@ import { type Copy, SLOTS, type Slot } from "./slots";
 
 export type CogId = string;
 
+// The two words the "others needed:" line of a cog file can hold. The choice between them
+// is made in that file. This table only says what each word asks for.
+export const HOW_MANY = ["one", "two"] as const;
+export type HowMany = (typeof HOW_MANY)[number];
+// "sorted" is how many cogs her account was sorted to and are still offered on this turn.
+// "marked" is how many of those were on her at the same moment as her own teaching.
+export type Tally = { sorted: number; marked: number };
+const NEEDS: Record<HowMany, (n: Tally) => boolean> = {
+  // Her teaching and one other thing on her at the same moment.
+  one: ({ marked }) => marked >= 1,
+  // Two of the other cogs, with her teaching on her at the same moment as at least one of them.
+  two: ({ sorted, marked }) => sorted >= 2 && marked >= 1,
+};
+// Any other word is never enough, so a typo cannot let a reading through.
+export const enough = (word: string, n: Tally): boolean =>
+  (HOW_MANY as readonly string[]).includes(word) && NEEDS[word as HowMany](n);
+
 export type Cog = {
   id: CogId;
   name: string; // the teacher-language name: what she sees and what the reading names
@@ -18,6 +35,13 @@ export type Cog = {
   fallbackMeaning: string;
   examples: string;
   nearMisses: string;
+  // Only on the cog an account is never sorted to. It leads a reading when her words name
+  // teaching of her own and enough of the cogs that were sorted to were on her at that moment.
+  condition?: {
+    othersNeeded: HowMany; // the "others needed:" line
+    teaching: string; // "## Her teaching is named when": how the reading step decides that
+    counts: string; // "## Counts alongside her teaching when": how it decides, cog by cog, what was on her then
+  };
 };
 
 export type Beyond = {
@@ -46,10 +70,9 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const read = (...parts: string[]) => fs.readFileSync(path.join(DATA_DIR, ...parts), "utf8");
 
 // One file per cog: a few "key: value" lines at the top, then "## " sections for the rest.
-function parseCog(file: string): Cog {
-  const where = `data/cogs/${file}`;
-  const text = read("cogs", file);
-  const head = parseHeader(text, ["id", "name", "cite", "status"]);
+// `where` is the file's name, for the message when something is missing.
+export function parseCogText(text: string, where: string): Cog {
+  const head = parseHeader(text, ["id", "name", "cite", "status", "others needed"]);
   const sections: Record<string, string> = {};
   for (const chunk of text.split(/^## /m).slice(1)) {
     const [heading, ...rest] = chunk.split("\n");
@@ -63,6 +86,24 @@ function parseCog(file: string): Cog {
   const cite = (head.cite ?? "").trim();
   const citeSentence = oneLine(sections["cite sentence"] ?? "") || undefined;
   if (!cite && !citeSentence) throw new Error(`${where}: needs a "cite:" line or a "## Cite sentence" section`);
+
+  // A cog file carries one of two lines. With "cite:", accounts are sorted to it. With
+  // "others needed:", they never are. A file with neither stops the load, so deleting that
+  // line cannot quietly turn the cog into one more choice in the sort.
+  const others = head["others needed"]?.trim().toLowerCase();
+  if (others === undefined && !cite) throw new Error(`${where}: needs a "cite:" line or an "others needed:" line`);
+  let condition: Cog["condition"];
+  if (others !== undefined) {
+    if (cite) throw new Error(`${where}: has both a "cite:" line and an "others needed:" line; a cog takes one or the other`);
+    if (!(HOW_MANY as readonly string[]).includes(others)) {
+      throw new Error(`${where}: "others needed:" must be ${HOW_MANY.map((w) => `"${w}"`).join(" or ")} (found "${others}")`);
+    }
+    condition = {
+      othersNeeded: others as HowMany,
+      teaching: need(sections["her teaching is named when"], 'the "## Her teaching is named when" section'),
+      counts: need(sections["counts alongside her teaching when"], 'the "## Counts alongside her teaching when" section'),
+    };
+  }
   return {
     id: need(head.id, 'an "id:" line'),
     name: need(head.name, 'a "name:" line'),
@@ -74,8 +115,11 @@ function parseCog(file: string): Cog {
     fallbackMeaning: oneLine(need(sections["fallback meaning"], 'the "## Fallback meaning" section')),
     examples: sections["examples"] ?? "",
     nearMisses: sections["near-misses"] ?? "",
+    ...(condition ? { condition } : {}),
   };
 }
+
+const parseCog = (file: string): Cog => parseCogText(read("cogs", file), `data/cogs/${file}`);
 
 export function loadCogs(): Cog[] {
   const cogs = fs
@@ -86,6 +130,8 @@ export function loadCogs(): Cog[] {
   if (cogs.length === 0) throw new Error("data/cogs: no cog files found");
   const ids = new Set(cogs.map((c) => c.id));
   if (ids.size !== cogs.length) throw new Error("data/cogs: two files share an id");
+  if (cogs.filter((c) => c.condition).length !== 1) throw new Error('data/cogs: exactly one cog file carries an "others needed:" line');
+  if (!cogs.some((c) => !c.condition)) throw new Error('data/cogs: no cog an account can be sorted to (every file has an "others needed:" line)');
   return cogs;
 }
 

@@ -91,5 +91,7 @@ export const NOT_IN_A_READING = [
 ];
 // Ways of mislabelling the cog that is Kim's own.
 export const NOT_SAID_OF_5K = ["invented", "made up", "unofficial", "not a real", "Missouri's 5.K", "Quality Indicator 5.K"];
+// Words that would turn "this is proposed" into doubt about it.
+export const HEDGES = ["may be", "might be", "possibly", "experimental", "unproven", "not yet proven"];
 // A cog number where only a name belongs.
 export const COG_NUMBER = /(?<![0-9.])5\.[123K](?![0-9A-Za-z])/;

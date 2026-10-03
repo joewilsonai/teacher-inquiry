@@ -25,14 +25,17 @@ status: DRAFT by Luna
 ## reading
 status: DRAFT by Luna
 
-- Most accounts fit exactly one. Add a second or third only when her words carry separate evidence for it: a different thing she is acting on, not another way of describing the same thing.
+- Most accounts fit exactly one. Add another only when her words carry separate evidence for it: a different thing she is acting on, not another way of describing the same thing.
 - When her account plainly carries several separate things, list each of them, strongest first. She was clear, and nothing more needs asking.
 - Decide by what she is acting on. If she says one thing is fine and names another as the hard part, the hard part is the reading.
-- When what she describes is about herself, and nothing in the room is named that she is acting on, none of the four fits.
+- When what she describes is about herself, and nothing in the room is named that she is acting on, none of them fits.
 - Do not use age or grade to decide anything.
+- Sort each thing she is acting on the same way whether or not she says she was teaching someone at that moment.
+- When she says something else needed her and does not say what was happening there, that part is not sorted. Do not fill in what those students were doing.
 
 ## meaning
 status: DRAFT by Luna
 
 - It names what the starting place is. Example of the shape, for an account about cleanup after art running long: "the starting place is how cleanup after art is set up, the routine and where things go".
 - Nothing about age or grade, even if she mentioned one. Say "students" or "they".
+- When the clause is about her teaching and something else on her at the same moment, it names those things in her own words. It never says she can't, and never says how it is going.
