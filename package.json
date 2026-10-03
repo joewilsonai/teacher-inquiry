@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3210",
-    "build": "next build",
+    "build": "npm run check && next build",
     "start": "next start -p 3210",
     "typecheck": "tsc --noEmit",
+    "check": "node --import tsx scripts/check.ts && node --import tsx scripts/stubs.ts",
+    "drafts": "node --import tsx scripts/check.ts --drafts",
     "eval": "node --env-file=.env.local --import tsx scripts/eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
-    "gray-matter": "^4.0.3",
+    "@vercel/blob": "^2.8.0",
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

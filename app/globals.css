@@ -135,11 +135,6 @@ h2 {
   font-weight: 600;
 }
 
-.band-hint {
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .field {
   display: grid;
   gap: 8px;
@@ -217,6 +212,7 @@ button {
 .said blockquote {
   margin: 0;
   font-size: 19px;
+  white-space: pre-wrap;
 }
 
 .chip {
@@ -262,8 +258,21 @@ button {
   color: var(--no);
 }
 
-.suggestion {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+.reading h2 {
+  margin-top: 2px;
+}
+
+/* Said once on a card when her words were kept. */
+.held {
+  margin: 16px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.held + .choices,
+.held + .followup,
+.explain + .choices {
+  margin-top: 16px;
 }
 
 .explain {
@@ -285,62 +294,11 @@ button {
 .followup {
   display: grid;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 14px;
 }
 
 .followup .primary {
   justify-self: start;
-}
-
-.why {
-  margin-top: 20px;
-  font-size: 15px;
-  color: var(--muted);
-}
-
-.why summary {
-  cursor: pointer;
-}
-
-.why p {
-  margin: 8px 0 0;
-}
-
-.options {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.option {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  padding: 14px 16px;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: var(--paper);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.option:hover {
-  border-color: var(--accent);
-}
-
-.option span {
-  font-size: 15px;
-  color: var(--muted);
-}
-
-.trail {
-  margin: 8px 0 0;
-  padding-left: 22px;
-  font-size: 19px;
-}
-
-.trail li + li {
-  margin-top: 4px;
 }
 
 .thinking {
@@ -386,17 +344,6 @@ button {
   clip: rect(0 0 0 0);
 }
 
-.error {
-  border-color: var(--no);
-  background: var(--no-soft);
-}
-
-.error p,
-.error-inline {
-  margin: 0 0 10px;
-  color: var(--no);
-}
-
 .restart {
   justify-self: start;
   margin-top: 8px;
@@ -405,9 +352,6 @@ button {
 @media (max-width: 480px) {
   .card {
     padding: 18px;
-  }
-  .band-hint {
-    display: none;
   }
 }
 

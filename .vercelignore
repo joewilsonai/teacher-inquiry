@@ -1,0 +1,8 @@
+# Left on this machine when deploying from this folder with the Vercel CLI. The CLI does not
+# read .gitignore, so anything local-only has to be named here too. (Deploys that Vercel
+# builds from GitHub only ever see what is committed.)
+.collector/
+.private-terms
+.env*
+tsconfig.tsbuildinfo
+*.log

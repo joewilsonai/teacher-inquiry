@@ -17,3 +17,6 @@ CLAUDE.local.md
 tsconfig.tsbuildinfo
 .vercel
 .env*
+# The local collector file (teachers' words; never in git) and the private term list
+.collector/
+.private-terms

@@ -8,7 +8,12 @@ export function proxy(req: NextRequest) {
 
   const header = req.headers.get("authorization") ?? "";
   if (header.startsWith("Basic ")) {
-    const decoded = atob(header.slice(6));
+    let decoded = "";
+    try {
+      decoded = atob(header.slice(6));
+    } catch {
+      // Not valid base64: treated the same as a wrong password.
+    }
     if (decoded.slice(decoded.indexOf(":") + 1) === password) return NextResponse.next();
   }
   return new NextResponse("Password required.", {
