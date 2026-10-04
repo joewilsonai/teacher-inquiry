@@ -1,0 +1,28 @@
+# The app's own checks, on every pull request and on main: the authored data is whole
+# (every slot the page shows has its words, nothing is capped by a bare number, no teacher-
+# facing sentence is written in the page itself) and the turn behaves, with a scripted model.
+# Nothing here needs a key or calls a model.
+#
+# main is protected: a pull request can be merged only after this passes and someone other
+# than its author has approved it. A merge to main goes to the live site.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run check
